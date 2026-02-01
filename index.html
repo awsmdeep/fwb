@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <meta name="description" content="A fun interactive question for your special someone">
+    <meta name="theme-color" content="#667eea">
+    <title>Will You Be My Friend?</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="background-animation"></div>
+    
+    <div class="container">
+        <div class="content">
+            <h1 class="main-heading">Will You Be My Friend?<br><span class="subtitle">With Benefits</span></h1>
+            
+            <div class="button-box" id="buttonBox">
+                <div class="button-container">
+                    <button class="btn btn-yes" id="yesBtn">Yes</button>
+                    <button class="btn btn-no" id="noBtn">No</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Success Popup -->
+    <div class="success-popup" id="successPopup">
+        <div class="popup-content">
+            <h2 class="thank-you-text">You Made Me Happy!</h2>
+            <p class="celebration-text">I'm so lucky to have you in my life.</p>
+            <div class="confetti-container" id="confettiContainer"></div>
+            <button class="btn btn-restart" onclick="location.reload()">Ask Again</button>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
