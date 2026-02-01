@@ -90,18 +90,22 @@ document.addEventListener('touchmove', (e) => {
 
     const distance = Math.hypot(touchX - noBtnCenterX, touchY - noBtnCenterY);
 
-    // If finger is within 120px of the button, make it float away
-    if (distance < 120) {
+    // If finger is within ~180px of the button, make it sprint farther and faster
+    if (distance < 180) {
         const angle = Math.atan2(noBtnCenterY - touchY, noBtnCenterX - touchX);
         
-        // Calculate movement distance relative to container size
+        // Calculate movement distance relative to container size (bigger on mobile)
         const containerWidth = containerRect.width;
         const containerHeight = containerRect.height;
-        const moveDistance = Math.min(containerWidth, containerHeight) * 0.2; // 20% of smaller dimension
+        // increase to ~60% of smaller dimension for a big jump
+        const moveDistance = Math.min(containerWidth, containerHeight) * 0.6;
+        
+        // Add a small random multiplier so it sometimes jumps further
+        const randomBoost = 0.8 + Math.random() * 0.8;
         
         // Calculate new position relative to button's current position
-        let newX = noBtnCenterX + Math.cos(angle) * moveDistance;
-        let newY = noBtnCenterY + Math.sin(angle) * moveDistance;
+        let newX = noBtnCenterX + Math.cos(angle) * moveDistance * randomBoost;
+        let newY = noBtnCenterY + Math.sin(angle) * moveDistance * randomBoost;
 
         // Constrain to stay within container
         const btnWidth = noBtnRect.width;
@@ -111,15 +115,17 @@ document.addEventListener('touchmove', (e) => {
         const containerTop = containerRect.top;
         const containerBottom = containerRect.bottom;
 
-        newX = Math.max(containerLeft + 10, Math.min(newX, containerRight - btnWidth - 10));
-        newY = Math.max(containerTop + 10, Math.min(newY, containerBottom - btnHeight - 10));
+        newX = Math.max(containerLeft + 6, Math.min(newX, containerRight - btnWidth - 6));
+        newY = Math.max(containerTop + 6, Math.min(newY, containerBottom - btnHeight - 6));
 
         // Convert back to transform-relative coordinates
         const translateX = newX - (noBtnRect.left + noBtnRect.width / 2);
         const translateY = newY - (noBtnRect.top + noBtnRect.height / 2);
 
-        noBtn.style.transform = `translate(${translateX}px, ${translateY}px) rotate(${Math.random() * 20 - 10}deg)`;
-        noBtn.style.transition = 'transform 0.1s ease-out';
+        noBtn.style.willChange = 'transform';
+        noBtn.style.transform = `translate(${translateX}px, ${translateY}px) rotate(${Math.random() * 40 - 20}deg)`;
+        // much quicker transition to feel snappier on phones
+        noBtn.style.transition = 'transform 0.05s cubic-bezier(0.2,0.8,0.2,1)';
         
         // Show fun message on mobile
         showFloatingMessage();
@@ -143,11 +149,13 @@ noBtn.addEventListener('contextmenu', (e) => {
     return false;
 });
 
-// Add touch support for mobile
+// Add touch support for mobile (fine-grained movement on direct touch)
 noBtn.addEventListener('touchmove', (e) => {
     e.preventDefault();
     e.stopPropagation();
     
+    const container = document.querySelector('.container');
+    const containerRect = container.getBoundingClientRect();
     const touch = e.touches[0];
     const noBtnRect = noBtn.getBoundingClientRect();
     const noBtnCenterX = noBtnRect.left + noBtnRect.width / 2;
@@ -158,15 +166,34 @@ noBtn.addEventListener('touchmove', (e) => {
 
     const distance = Math.hypot(touchX - noBtnCenterX, touchY - noBtnCenterY);
 
-    if (distance < 150) {
+    // Trigger earlier and jump farther on phones
+    if (distance < 220) {
         const angle = Math.atan2(noBtnCenterY - touchY, noBtnCenterX - touchX);
-        const moveDistance = 100;
+        const containerWidth = containerRect.width;
+        const containerHeight = containerRect.height;
+        const moveDistance = Math.min(containerWidth, containerHeight) * 0.6;
+        const randomBoost = 0.6 + Math.random() * 1.0;
         
-        let newX = Math.cos(angle) * moveDistance;
-        let newY = Math.sin(angle) * moveDistance;
+        let newX = noBtnCenterX + Math.cos(angle) * moveDistance * randomBoost;
+        let newY = noBtnCenterY + Math.sin(angle) * moveDistance * randomBoost;
 
-        noBtn.style.transform = `translate(${newX}px, ${newY}px) rotate(${Math.random() * 20 - 10}deg)`;
-        noBtn.style.transition = 'transform 0.1s ease-out';
+        // Constrain to stay within container
+        const btnWidth = noBtnRect.width;
+        const btnHeight = noBtnRect.height;
+        const containerLeft = containerRect.left;
+        const containerRight = containerRect.right;
+        const containerTop = containerRect.top;
+        const containerBottom = containerRect.bottom;
+
+        newX = Math.max(containerLeft + 6, Math.min(newX, containerRight - btnWidth - 6));
+        newY = Math.max(containerTop + 6, Math.min(newY, containerBottom - btnHeight - 6));
+
+        const translateX = newX - (noBtnRect.left + noBtnRect.width / 2);
+        const translateY = newY - (noBtnRect.top + noBtnRect.height / 2);
+
+        noBtn.style.willChange = 'transform';
+        noBtn.style.transform = `translate(${translateX}px, ${translateY}px) rotate(${Math.random() * 40 - 20}deg)`;
+        noBtn.style.transition = 'transform 0.05s cubic-bezier(0.2,0.8,0.2,1)';
     }
     
     return false;
@@ -189,10 +216,10 @@ noBtn.addEventListener('touchstart', (e) => {
 
     const angle = Math.atan2(noBtnCenterY - touchY, noBtnCenterX - touchX);
     
-    // Calculate movement distance relative to container size
+    // Calculate movement distance relative to container size (bigger jump on phones)
     const containerWidth = containerRect.width;
     const containerHeight = containerRect.height;
-    const moveDistance = Math.min(containerWidth, containerHeight) * 0.2;
+    const moveDistance = Math.min(containerWidth, containerHeight) * 0.6;
     
     // Calculate new position
     let newX = noBtnCenterX + Math.cos(angle) * moveDistance;
