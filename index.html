@@ -2,40 +2,166 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
-    <meta name="description" content="A fun interactive question for your special someone">
-    <meta name="theme-color" content="#667eea">
-    <title>Will You Be My Friend?</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="MoodBooks - Get book recommendations based on your mood">
+    <title>MoodBooks - Books Based on Your Mood</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Playfair+Display:wght@700;800&family=Inter:wght@300;400;500;600;700&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="background-animation"></div>
+    <div class="background"></div>
     
     <div class="container">
-        <div class="content">
-            <h1 class="main-heading">Will You Be My Friend?<br><span class="subtitle">With Benefits</span></h1>
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <button id="backBtn" class="back-btn" style="display:none;" aria-label="Back">Back</button>
+                <div class="logo-section">
+                    <h1 class="app-title">MoodBooks</h1>
+                    <p class="greeting">Hello Appy! What mood are you in?</p>
+                </div>
+            </div>
+        </header>
+
+        <!-- Search Bar -->
+        <div class="search-container">
+            <div class="search-wrapper">
+                <input 
+                    type="text" 
+                        id="searchInput" 
+                        class="search-input" 
+                        placeholder="You can search for your book..."
+                        aria-label="Search for your book"
+                        autocomplete="off"
+                >
+                <button class="search-btn" id="searchBtn">Search</button>
+            </div>
+            <p class="search-hint">You can search for your book or select a mood below.</p>
+            <div class="search-helper">You can search by title, author, or keyword.</div>
+        </div>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Mood Selection Section -->
+            <section class="mood-selector">
+                <h2>Choose your mood or search:</h2>
+                <p class="mood-description">Books are waiting for you...</p>
+                <div class="mood-grid">
+                    <div class="mood-card" data-mood="happy" data-keywords="comedy, humor, uplifting, feel-good">
+                        <span class="mood-name">Happy</span>
+                    </div>
+                    <div class="mood-card" data-mood="sad" data-keywords="emotional, melancholic, touching, heartfelt">
+                        <span class="mood-name">Sad</span>
+                    </div>
+                    <div class="mood-card" data-mood="romantic" data-keywords="romance, love, relationships, passion">
+                        <span class="mood-name">Romantic</span>
+                    </div>
+                    <div class="mood-card" data-mood="thriller" data-keywords="mystery, thriller, suspense, crime">
+                        <span class="mood-name">Thriller</span>
+                    </div>
+                    <div class="mood-card" data-mood="adventure" data-keywords="adventure, action, fantasy, exploration">
+                        <span class="mood-name">Adventure</span>
+                    </div>
+                    <div class="mood-card" data-mood="thoughtful" data-keywords="philosophy, reflection, thoughtful, inspiring">
+                        <span class="mood-name">Thoughtful</span>
+                    </div>
+                    <div class="mood-card" data-mood="funny" data-keywords="satire, witty, laughs, entertaining">
+                        <span class="mood-name">Funny</span>
+                    </div>
+                    <div class="mood-card" data-mood="inspirational" data-keywords="motivational, inspirational, personal growth">
+                        <span class="mood-name">Inspirational</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Loading State -->
+            <div id="loadingState" class="loading-state" style="display: none;">
+                <div class="spinner"></div>
+                <p>Finding the perfect books for your mood...</p>
+            </div>
+
+            <!-- Books Display Section -->
+            <section id="booksSection" class="books-section" style="display: none;">
+                <h2 id="sectionTitle">Books for Your Mood</h2>
+                <div class="books-grid" id="booksGrid">
+                    <!-- Books will be populated here -->
+                </div>
+            </section>
+
+            <!-- No Results -->
+            <div id="noResults" class="no-results" style="display: none;">
+                <p>Sorry, couldn't find books for this mood. Please try another!</p>
+            </div>
+        </main>
+    </div>
+
+    <!-- Book Detail Modal -->
+    <div id="bookModal" class="modal">
+        <div class="modal-content">
+            <button class="modal-close" id="modalClose">✕</button>
             
-            <div class="button-box" id="buttonBox">
-                <div class="button-container">
-                    <button class="btn btn-yes" id="yesBtn">Yes</button>
-                    <button class="btn btn-no" id="noBtn">No</button>
+            <div class="modal-header">
+                <img id="modalImage" src="" alt="Book Cover" class="modal-image">
+                <div class="modal-header-info">
+                    <h2 id="modalTitle" class="modal-title"></h2>
+                    <p id="modalAuthor" class="modal-author"></p>
+                    <div class="modal-meta">
+                        <span id="modalPublisher" class="meta-item"></span>
+                        <span id="modalYear" class="meta-item"></span>
+                        <span id="modalRating" class="meta-item"></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-body">
+                <!-- Description Section -->
+                <div class="description-section">
+                    <h3>Description</h3>
+                    <p id="modalDescription" class="full-text"></p>
+                </div>
+
+                <!-- Summary Section -->
+                <div class="summary-section">
+                    <h3>Summary</h3>
+                    <p id="modalSummary" class="full-text"></p>
+                </div>
+
+                <!-- Additional Info -->
+                <div class="info-grid">
+                    <div class="info-item">
+                        <label>Pages</label>
+                        <span id="modalPages">-</span>
+                    </div>
+                    <div class="info-item">
+                        <label>Language</label>
+                        <span id="modalLanguage">-</span>
+                    </div>
+                    <div class="info-item">
+                        <label>Category</label>
+                        <span id="modalCategory">-</span>
+                    </div>
+                    <div class="info-item">
+                        <label>ISBN</label>
+                        <span id="modalISBN">-</span>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="action-buttons">
+                    <a id="previewBtn" href="#" target="_blank" class="btn btn-primary">
+                        📖 Read Preview
+                    </a>
+                    <a id="buyBtn" href="#" target="_blank" class="btn btn-success">
+                        🛒 Buy on Google Play
+                    </a>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Success Popup -->
-    <div class="success-popup" id="successPopup">
-        <div class="popup-content">
-            <h2 class="thank-you-text">You Made Me Happy!</h2>
-            <p class="celebration-text">Thank you for being my friend!</p>
-            <div class="confetti-container" id="confettiContainer"></div>
-            <button class="btn btn-restart" onclick="location.reload()">Ask Again</button>
-        </div>
-    </div>
+    <div id="modalOverlay" class="modal-overlay"></div>
 
     <script src="script.js"></script>
 </body>

@@ -1,372 +1,365 @@
-const noBtn = document.getElementById('noBtn');
-const yesBtn = document.getElementById('yesBtn');
-const successPopup = document.getElementById('successPopup');
-const confettiContainer = document.getElementById('confettiContainer');
+// ===================================================
+// MOODBOOKS - Mood-Based Book Recommendations with Dark Theme
+// ===================================================
 
-// Check if device is mobile
-const isMobileDevice = () => {
-    // Check user agent
-    const userAgentCheck = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-    // Check viewport width (for DevTools mobile emulation)
-    const viewportCheck = window.innerWidth <= 768;
-    return userAgentCheck || viewportCheck;
-};
+const GOOGLE_BOOKS_API = 'https://www.googleapis.com/books/v1/volumes';
+let currentBooks = [];
+let currentSelectedMood = null;
 
-// Array of fun evasion messages
-const funMessages = [
-    "Not so fast!",
-    "You'll never get me!",
-    "Nope, try again!",
-    "I'm too quick!",
-    "Come on, say yes!",
-    "Get the hint?",
-    "Nice try!"
-];
-
-let messageIndex = 0;
-
-// Make the No button float away from cursor on desktop
-document.addEventListener('mousemove', (e) => {
-    // Skip on mobile devices
-    if (isMobileDevice()) return;
-
-    const container = document.querySelector('.container');
-    const containerRect = container.getBoundingClientRect();
-    const noBtnRect = noBtn.getBoundingClientRect();
-    const noBtnCenterX = noBtnRect.left + noBtnRect.width / 2;
-    const noBtnCenterY = noBtnRect.top + noBtnRect.height / 2;
-
-    const mouseX = e.clientX;
-    const mouseY = e.clientY;
-
-    const distance = Math.hypot(mouseX - noBtnCenterX, mouseY - noBtnCenterY);
-
-    // If cursor is within 120px of the button, make it float away
-    if (distance < 120) {
-        const angle = Math.atan2(noBtnCenterY - mouseY, noBtnCenterX - mouseX);
-        
-        // Calculate movement distance relative to container size
-        const containerWidth = containerRect.width;
-        const containerHeight = containerRect.height;
-        const moveDistance = Math.min(containerWidth, containerHeight) * 0.2; // 20% of smaller dimension
-        
-        // Calculate new position relative to button's current position
-        let newX = noBtnCenterX + Math.cos(angle) * moveDistance;
-        let newY = noBtnCenterY + Math.sin(angle) * moveDistance;
-
-        // Constrain to stay within container
-        const btnWidth = noBtnRect.width;
-        const btnHeight = noBtnRect.height;
-        const containerLeft = containerRect.left;
-        const containerRight = containerRect.right;
-        const containerTop = containerRect.top;
-        const containerBottom = containerRect.bottom;
-
-        newX = Math.max(containerLeft + 10, Math.min(newX, containerRight - btnWidth - 10));
-        newY = Math.max(containerTop + 10, Math.min(newY, containerBottom - btnHeight - 10));
-
-        // Convert back to transform-relative coordinates
-        const translateX = newX - (noBtnRect.left + noBtnRect.width / 2);
-        const translateY = newY - (noBtnRect.top + noBtnRect.height / 2);
-
-        noBtn.style.transform = `translate(${translateX}px, ${translateY}px) rotate(${Math.random() * 20 - 10}deg)`;
-        noBtn.style.transition = 'transform 0.1s ease-out';
-    }
+// ===================================================
+// INITIALIZATION
+// ===================================================
+document.addEventListener('DOMContentLoaded', () => {
+    setupEventListeners();
 });
 
-// Make the No button float away from touch on mobile
-document.addEventListener('touchmove', (e) => {
-    if (!isMobileDevice()) return;
-    
-    const container = document.querySelector('.container');
-    const containerRect = container.getBoundingClientRect();
-    const touch = e.touches[0];
-    const noBtnRect = noBtn.getBoundingClientRect();
-    const noBtnCenterX = noBtnRect.left + noBtnRect.width / 2;
-    const noBtnCenterY = noBtnRect.top + noBtnRect.height / 2;
-
-    const touchX = touch.clientX;
-    const touchY = touch.clientY;
-
-    const distance = Math.hypot(touchX - noBtnCenterX, touchY - noBtnCenterY);
-
-    // If finger is within ~180px of the button, make it sprint farther and faster
-    if (distance < 180) {
-        const angle = Math.atan2(noBtnCenterY - touchY, noBtnCenterX - touchX);
-        
-        // Calculate movement distance relative to container size (bigger on mobile)
-        const containerWidth = containerRect.width;
-        const containerHeight = containerRect.height;
-        // increase to ~60% of smaller dimension for a big jump
-        const moveDistance = Math.min(containerWidth, containerHeight) * 0.6;
-        
-        // Add a small random multiplier so it sometimes jumps further
-        const randomBoost = 0.8 + Math.random() * 0.8;
-        
-        // Calculate new position relative to button's current position
-        let newX = noBtnCenterX + Math.cos(angle) * moveDistance * randomBoost;
-        let newY = noBtnCenterY + Math.sin(angle) * moveDistance * randomBoost;
-
-        // Constrain to stay within container
-        const btnWidth = noBtnRect.width;
-        const btnHeight = noBtnRect.height;
-        const containerLeft = containerRect.left;
-        const containerRight = containerRect.right;
-        const containerTop = containerRect.top;
-        const containerBottom = containerRect.bottom;
-
-        newX = Math.max(containerLeft + 6, Math.min(newX, containerRight - btnWidth - 6));
-        newY = Math.max(containerTop + 6, Math.min(newY, containerBottom - btnHeight - 6));
-
-        // Convert back to transform-relative coordinates
-        const translateX = newX - (noBtnRect.left + noBtnRect.width / 2);
-        const translateY = newY - (noBtnRect.top + noBtnRect.height / 2);
-
-        noBtn.style.willChange = 'transform';
-        noBtn.style.transform = `translate(${translateX}px, ${translateY}px) rotate(${Math.random() * 40 - 20}deg)`;
-        // much quicker transition to feel snappier on phones
-        noBtn.style.transition = 'transform 0.05s cubic-bezier(0.2,0.8,0.2,1)';
-        
-        // Show fun message on mobile
-        showFloatingMessage();
-    }
-}, { passive: true });
-
-// Prevent clicking the No button
-noBtn.addEventListener('click', (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    
-    // Show fun evasion message (optional)
-    showFloatingMessage();
-    
-    return false;
-});
-
-// Disable context menu on No button
-noBtn.addEventListener('contextmenu', (e) => {
-    e.preventDefault();
-    return false;
-});
-
-// Add touch support for mobile (fine-grained movement on direct touch)
-noBtn.addEventListener('touchmove', (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    
-    const container = document.querySelector('.container');
-    const containerRect = container.getBoundingClientRect();
-    const touch = e.touches[0];
-    const noBtnRect = noBtn.getBoundingClientRect();
-    const noBtnCenterX = noBtnRect.left + noBtnRect.width / 2;
-    const noBtnCenterY = noBtnRect.top + noBtnRect.height / 2;
-
-    const touchX = touch.clientX;
-    const touchY = touch.clientY;
-
-    const distance = Math.hypot(touchX - noBtnCenterX, touchY - noBtnCenterY);
-
-    // Trigger earlier and jump farther on phones
-    if (distance < 220) {
-        const angle = Math.atan2(noBtnCenterY - touchY, noBtnCenterX - touchX);
-        const containerWidth = containerRect.width;
-        const containerHeight = containerRect.height;
-        const moveDistance = Math.min(containerWidth, containerHeight) * 0.6;
-        const randomBoost = 0.6 + Math.random() * 1.0;
-        
-        let newX = noBtnCenterX + Math.cos(angle) * moveDistance * randomBoost;
-        let newY = noBtnCenterY + Math.sin(angle) * moveDistance * randomBoost;
-
-        // Constrain to stay within container
-        const btnWidth = noBtnRect.width;
-        const btnHeight = noBtnRect.height;
-        const containerLeft = containerRect.left;
-        const containerRight = containerRect.right;
-        const containerTop = containerRect.top;
-        const containerBottom = containerRect.bottom;
-
-        newX = Math.max(containerLeft + 6, Math.min(newX, containerRight - btnWidth - 6));
-        newY = Math.max(containerTop + 6, Math.min(newY, containerBottom - btnHeight - 6));
-
-        const translateX = newX - (noBtnRect.left + noBtnRect.width / 2);
-        const translateY = newY - (noBtnRect.top + noBtnRect.height / 2);
-
-        noBtn.style.willChange = 'transform';
-        noBtn.style.transform = `translate(${translateX}px, ${translateY}px) rotate(${Math.random() * 40 - 20}deg)`;
-        noBtn.style.transition = 'transform 0.05s cubic-bezier(0.2,0.8,0.2,1)';
-    }
-    
-    return false;
-}, { passive: false });
-
-// Add touch support - trigger on any touch attempt
-noBtn.addEventListener('touchstart', (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    
-    const container = document.querySelector('.container');
-    const containerRect = container.getBoundingClientRect();
-    const touch = e.touches[0];
-    const noBtnRect = noBtn.getBoundingClientRect();
-    const noBtnCenterX = noBtnRect.left + noBtnRect.width / 2;
-    const noBtnCenterY = noBtnRect.top + noBtnRect.height / 2;
-
-    const touchX = touch.clientX;
-    const touchY = touch.clientY;
-
-    const angle = Math.atan2(noBtnCenterY - touchY, noBtnCenterX - touchX);
-    
-    // Calculate movement distance relative to container size (bigger jump on phones)
-    const containerWidth = containerRect.width;
-    const containerHeight = containerRect.height;
-    const moveDistance = Math.min(containerWidth, containerHeight) * 0.6;
-    
-    // Calculate new position
-    let newX = noBtnCenterX + Math.cos(angle) * moveDistance;
-    let newY = noBtnCenterY + Math.sin(angle) * moveDistance;
-
-    // Constrain to stay within container
-    const btnWidth = noBtnRect.width;
-    const btnHeight = noBtnRect.height;
-    const containerLeft = containerRect.left;
-    const containerRight = containerRect.right;
-    const containerTop = containerRect.top;
-    const containerBottom = containerRect.bottom;
-
-    newX = Math.max(containerLeft + 10, Math.min(newX, containerRight - btnWidth - 10));
-    newY = Math.max(containerTop + 10, Math.min(newY, containerBottom - btnHeight - 10));
-
-    // Convert back to transform-relative coordinates
-    const translateX = newX - (noBtnRect.left + noBtnRect.width / 2);
-    const translateY = newY - (noBtnRect.top + noBtnRect.height / 2);
-
-    noBtn.style.transform = `translate(${translateX}px, ${translateY}px) rotate(${Math.random() * 20 - 10}deg)`;
-    noBtn.style.transition = 'transform 0.1s ease-out';
-    
-    // Show fun message
-    showFloatingMessage();
-    
-    return false;
-}, { passive: false });
-
-// Function to show floating messages (optional visual feedback)
-function showFloatingMessage() {
-    const message = funMessages[messageIndex % funMessages.length];
-    messageIndex++;
-    
-    const floatingDiv = document.createElement('div');
-    floatingDiv.textContent = message;
-    floatingDiv.style.position = 'fixed';
-    floatingDiv.style.left = Math.random() * (window.innerWidth - 200) + 'px';
-    floatingDiv.style.top = Math.random() * (window.innerHeight - 100) + 'px';
-    floatingDiv.style.fontSize = '1.2rem';
-    floatingDiv.style.fontWeight = 'bold';
-    floatingDiv.style.color = '#f093fb';
-    floatingDiv.style.zIndex = '50';
-    floatingDiv.style.animation = 'floatMessage 2s ease-out forwards';
-    floatingDiv.style.textShadow = '2px 2px 4px rgba(0,0,0,0.2)';
-    
-    document.body.appendChild(floatingDiv);
-    
-    setTimeout(() => floatingDiv.remove(), 2000);
-}
-
-// Add animation for floating messages
-const style = document.createElement('style');
-style.textContent = `
-    @keyframes floatMessage {
-        0% {
-            opacity: 1;
-            transform: translateY(0) scale(1);
-        }
-        100% {
-            opacity: 0;
-            transform: translateY(-100px) scale(1.2);
-        }
-    }
-`;
-document.head.appendChild(style);
-
-// Yes button functionality
-yesBtn.addEventListener('click', () => {
-    showSuccessPopup();
-    createConfetti();
-});
-
-// Show success popup with celebration
-function showSuccessPopup() {
-    successPopup.classList.add('show');
-    
-    // Trigger animations
-    setTimeout(() => {
-        playSuccessSound();
-    }, 300);
-}
-
-// Create confetti falling animation
-function createConfetti() {
-    const confettiPieces = 60;
-    const colors = ['#ff6b9d', '#c06c84', '#6c5b7b', '#ff8fa3', '#f5576c', '#ffd6e8', '#ffb3d9'];
-    
-    for (let i = 0; i < confettiPieces; i++) {
-        const confetti = document.createElement('div');
-        confetti.classList.add('confetti');
-        confetti.style.left = Math.random() * 100 + '%';
-        confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
-        confetti.style.width = Math.random() * 15 + 5 + 'px';
-        confetti.style.height = Math.random() * 15 + 5 + 'px';
-        confetti.style.borderRadius = Math.random() > 0.5 ? '50%' : '0';
-        confetti.style.animationDelay = Math.random() * 0.5 + 's';
-        confetti.style.animationDuration = Math.random() * 2 + 2.5 + 's';
-        
-        confettiContainer.appendChild(confetti);
-    }
-}
-
-// Optional: Play a success sound (using Web Audio API)
-function playSuccessSound() {
-    try {
-        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        
-        // Create a simple success melody
-        const notes = [523, 659, 784]; // C5, E5, G5
-        let currentNote = 0;
-        
-        function playNote(frequency, duration) {
-            const osc = audioContext.createOscillator();
-            const gain = audioContext.createGain();
-            
-            osc.connect(gain);
-            gain.connect(audioContext.destination);
-            
-            osc.frequency.value = frequency;
-            osc.type = 'sine';
-            
-            gain.gain.setValueAtTime(0.3, audioContext.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
-            
-            osc.start(audioContext.currentTime);
-            osc.stop(audioContext.currentTime + duration);
-        }
-        
-        notes.forEach((freq, index) => {
-            setTimeout(() => {
-                playNote(freq, 0.2);
-            }, index * 150);
+// ===================================================
+// EVENT LISTENERS
+// ===================================================
+function setupEventListeners() {
+    // Mood card clicks
+    const moodCards = document.querySelectorAll('.mood-card');
+    moodCards.forEach(card => {
+        card.addEventListener('click', async () => {
+            const mood = card.dataset.mood;
+            const keywords = card.dataset.keywords;
+            currentSelectedMood = mood;
+            await fetchBooksByMood(keywords);
         });
-    } catch (e) {
-        // Fallback if audio context fails - silent success is still a success!
-        console.log('Success! 🎉');
+    });
+
+    // Search functionality
+    const searchBtn = document.getElementById('searchBtn');
+    const searchInput = document.getElementById('searchInput');
+    
+    if (searchBtn) {
+        searchBtn.addEventListener('click', performSearch);
+    }
+    
+    if (searchInput) {
+        searchInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') performSearch();
+        });
+    }
+
+    // Modal close
+    const modalClose = document.getElementById('modalClose');
+    const modalOverlay = document.getElementById('modalOverlay');
+    if (modalClose) modalClose.addEventListener('click', closeModal);
+    if (modalOverlay) modalOverlay.addEventListener('click', closeModal);
+
+    // Back button
+    const backBtn = document.getElementById('backBtn');
+    if (backBtn) {
+        backBtn.addEventListener('click', performBack);
+    }
+
+    // Book card clicks
+    document.addEventListener('click', (e) => {
+        if (e.target.closest('.book-card')) {
+            const bookIndex = Array.from(document.querySelectorAll('.book-card')).indexOf(e.target.closest('.book-card'));
+            if (currentBooks[bookIndex]) {
+                openModal(currentBooks[bookIndex]);
+                // keep back button visible when modal opens
+                showBackBtn();
+            }
+        }
+    });
+}
+
+// ===================================================
+// SEARCH FUNCTIONALITY
+// ===================================================
+async function performSearch() {
+    const searchInput = document.getElementById('searchInput');
+    const query = searchInput.value.trim();
+    
+    if (!query) {
+        alert('Please enter a book name to search');
+        return;
+    }
+
+    const moodSelector = document.querySelector('.mood-selector');
+    const loadingState = document.getElementById('loadingState');
+    const booksSection = document.getElementById('booksSection');
+    const noResults = document.getElementById('noResults');
+
+    // Show loading
+    moodSelector.style.display = 'none';
+    booksSection.style.display = 'none';
+    noResults.style.display = 'none';
+    loadingState.style.display = 'flex';
+
+    try {
+        const response = await fetch(
+            `${GOOGLE_BOOKS_API}?q=${encodeURIComponent(query)}&maxResults=12&printType=books&orderBy=relevance`
+        );
+
+        if (!response.ok) throw new Error('Failed to fetch books');
+
+        const data = await response.json();
+
+        if (data.items && data.items.length > 0) {
+            currentBooks = data.items;
+            currentSelectedMood = 'search';
+            displaySearchResults(data.items, query);
+            
+            // Show books section
+            loadingState.style.display = 'none';
+            booksSection.style.display = 'block';
+            showBackBtn();
+        } else {
+            showNoResults();
+        }
+    } catch (error) {
+        console.error('Error searching books:', error);
+        showNoResults();
     }
 }
 
-// Add some initial interactivity hints
-window.addEventListener('load', () => {
-    // Add a subtle pulse to the Yes button
-    setTimeout(() => {
-        yesBtn.style.animation = 'none';
-        setTimeout(() => {
-            yesBtn.style.animation = '';
-        }, 10);
-    }, 2000);
+function displaySearchResults(books, query) {
+    const sectionTitle = document.getElementById('sectionTitle');
+    if (sectionTitle) {
+        sectionTitle.textContent = `Search Results for "${query}"`;
+    }
+    displayBooks(books);
+}
+
+// ===================================================
+// FETCH BOOKS BY MOOD
+// ===================================================
+async function fetchBooksByMood(keywords) {
+    const moodSelector = document.querySelector('.mood-selector');
+    const loadingState = document.getElementById('loadingState');
+    const booksSection = document.getElementById('booksSection');
+    const noResults = document.getElementById('noResults');
+
+    // Show loading
+    moodSelector.style.display = 'none';
+    booksSection.style.display = 'none';
+    noResults.style.display = 'none';
+    loadingState.style.display = 'flex';
+
+    try {
+        const response = await fetch(
+            `${GOOGLE_BOOKS_API}?q=${encodeURIComponent(keywords)}&maxResults=12&printType=books&orderBy=relevance`
+        );
+
+        if (!response.ok) throw new Error('Failed to fetch books');
+
+        const data = await response.json();
+
+        if (data.items && data.items.length > 0) {
+            currentBooks = data.items;
+            displayBooks(data.items);
+            
+            // Show books section
+            loadingState.style.display = 'none';
+            booksSection.style.display = 'block';
+            showBackBtn();
+        } else {
+            showNoResults();
+        }
+    } catch (error) {
+        console.error('Error fetching books:', error);
+        showNoResults();
+    }
+}
+
+// ===================================================
+// DISPLAY BOOKS
+// ===================================================
+function displayBooks(books) {
+    const booksGrid = document.getElementById('booksGrid');
+    const moodLabels = {
+        happy: 'Happy',
+        sad: 'Sad',
+        romantic: 'Romantic',
+        thriller: 'Thriller',
+        adventure: 'Adventure',
+        thoughtful: 'Thoughtful',
+        funny: 'Funny',
+        inspirational: 'Inspirational'
+    };
+
+    const sectionTitle = document.getElementById('sectionTitle');
+    if (sectionTitle && currentSelectedMood && currentSelectedMood !== 'search') {
+        sectionTitle.textContent = `Books for Your ${moodLabels[currentSelectedMood] || 'Mood'}`;
+    }
+
+    booksGrid.innerHTML = '';
+
+    books.forEach((book) => {
+        const card = createBookCard(book);
+        booksGrid.appendChild(card);
+    });
+    // ensure back button is visible when books are shown
+    showBackBtn();
+}
+
+function createBookCard(book) {
+    const volumeInfo = book.volumeInfo;
+    const card = document.createElement('div');
+    card.className = 'book-card';
+
+    const imageUrl = volumeInfo.imageLinks?.thumbnail || 
+        'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22128%22 height=%22196%22%3E%3Crect fill=%22%238b5cf6%22 width=%22128%22 height=%22196%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23fff%22 font-size=%2214%22%3ENo Cover%3C/text%3E%3C/svg%3E';
+    const title = volumeInfo.title || 'Unknown Title';
+    const author = volumeInfo.authors ? volumeInfo.authors[0] : 'Unknown Author';
+    const rating = volumeInfo.averageRating || 0;
+
+    card.innerHTML = `
+        <img src="${imageUrl}" alt="${title}" class="book-card-image">
+        <div class="book-card-content">
+            <h3 class="book-card-title">${title}</h3>
+            <p class="book-card-author">${author}</p>
+            ${rating > 0 ? `<p class="book-card-rating">⭐ ${rating.toFixed(1)}/5</p>` : ''}
+        </div>
+    `;
+
+    return card;
+}
+
+// ===================================================
+// MODAL FUNCTIONALITY
+// ===================================================
+function openModal(book) {
+    const modal = document.getElementById('bookModal');
+    const volumeInfo = book.volumeInfo;
+    const saleInfo = book.saleInfo || {};
+    const accessInfo = book.accessInfo || {};
+
+    // Extract description and create summary
+    const description = volumeInfo.description || 'No description available.';
+    const summary = generateSummary(description);
+
+    const imageUrl = volumeInfo.imageLinks?.thumbnail || '';
+    const title = volumeInfo.title || 'Unknown Title';
+    const author = volumeInfo.authors ? volumeInfo.authors.join(', ') : 'Unknown Author';
+    const publisher = volumeInfo.publisher || 'N/A';
+    const year = volumeInfo.publishedDate ? volumeInfo.publishedDate.split('-')[0] : 'N/A';
+    const pages = volumeInfo.pageCount || 'N/A';
+    const language = volumeInfo.language || 'N/A';
+    const rating = volumeInfo.averageRating || 'Not Rated';
+    const ratingsCount = volumeInfo.ratingsCount || 0;
+    const isbn = volumeInfo.industryIdentifiers ? volumeInfo.industryIdentifiers[0].identifier : 'N/A';
+    const categories = volumeInfo.categories ? volumeInfo.categories[0] : 'General';
+
+    // Populate modal
+    document.getElementById('modalImage').src = imageUrl;
+    document.getElementById('modalImage').alt = title;
+    document.getElementById('modalTitle').textContent = title;
+    document.getElementById('modalAuthor').textContent = `by ${author}`;
+    document.getElementById('modalPublisher').textContent = `Publisher: ${publisher}`;
+    document.getElementById('modalYear').textContent = `Year: ${year}`;
+    document.getElementById('modalRating').textContent = `⭐ ${typeof rating === 'number' ? rating.toFixed(1) : rating}/5`;
+
+    document.getElementById('modalDescription').textContent = description;
+    document.getElementById('modalSummary').textContent = summary;
+
+    document.getElementById('modalPages').textContent = pages;
+    document.getElementById('modalLanguage').textContent = language;
+    document.getElementById('modalCategory').textContent = categories;
+    document.getElementById('modalISBN').textContent = isbn;
+
+    // Preview button
+    const previewBtn = document.getElementById('previewBtn');
+    if (accessInfo.webReaderLink) {
+        previewBtn.href = accessInfo.webReaderLink;
+        previewBtn.style.display = 'inline-block';
+    } else {
+        previewBtn.style.display = 'none';
+    }
+
+    // Buy button
+    const buyBtn = document.getElementById('buyBtn');
+    const buyLink = saleInfo.buyLink || `https://www.google.com/search?q=${encodeURIComponent(title + ' ' + author + ' buy book')}`;
+    buyBtn.href = buyLink;
+
+    // Show modal
+    modal.classList.add('show');
+}
+
+function closeModal() {
+    const modal = document.getElementById('bookModal');
+    modal.classList.remove('show');
+}
+
+// ===================================================
+// BACK NAVIGATION
+// ===================================================
+function performBack() {
+    const modal = document.getElementById('bookModal');
+    const booksSection = document.getElementById('booksSection');
+    const moodSelector = document.querySelector('.mood-selector');
+    const noResults = document.getElementById('noResults');
+
+    // If modal open, close it first
+    if (modal && modal.classList.contains('show')) {
+        closeModal();
+        return;
+    }
+
+    // If viewing books, go back to mood selector
+    if (booksSection && booksSection.style.display !== 'none') {
+        booksSection.style.display = 'none';
+        noResults.style.display = 'none';
+        moodSelector.style.display = 'block';
+        currentBooks = [];
+        currentSelectedMood = null;
+        hideBackBtn();
+        return;
+    }
+}
+
+function showBackBtn() {
+    const backBtn = document.getElementById('backBtn');
+    if (backBtn) backBtn.style.display = 'inline-flex';
+}
+
+function hideBackBtn() {
+    const backBtn = document.getElementById('backBtn');
+    if (backBtn) backBtn.style.display = 'none';
+}
+
+// ===================================================
+// SUMMARY GENERATOR
+// ===================================================
+function generateSummary(description) {
+    if (!description) return 'Summary not available for this book.';
+
+    // Remove HTML tags if present
+    let clean = description.replace(/<[^>]*>/g, '');
+
+    // Get first 300 characters as summary
+    if (clean.length > 300) {
+        clean = clean.substring(0, 300).trim() + '...';
+    }
+
+    return clean;
+}
+
+// ===================================================
+// UTILITY FUNCTIONS
+// ===================================================
+function showNoResults() {
+    const loadingState = document.getElementById('loadingState');
+    const booksSection = document.getElementById('booksSection');
+    const noResults = document.getElementById('noResults');
+    const moodSelector = document.querySelector('.mood-selector');
+
+    loadingState.style.display = 'none';
+    booksSection.style.display = 'none';
+    noResults.style.display = 'block';
+    moodSelector.style.display = 'block';
+    hideBackBtn();
+}
+
+// ===================================================
+// CLOSE MODAL ON ESCAPE KEY
+// ===================================================
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+        closeModal();
+    }
 });
