@@ -5,7 +5,7 @@
 }
 
 body {
-    font-family: 'Poppins', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-family: 'Lora', Georgia, 'Times New Roman', serif;
     height: 100vh;
     overflow: hidden;
     background: linear-gradient(135deg, #ff6b9d 0%, #c06c84 25%, #6c5b7b 50%, #355c7d 75%, #2a9d8f 100%);
